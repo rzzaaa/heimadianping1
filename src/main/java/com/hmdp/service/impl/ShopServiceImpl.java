@@ -1,6 +1,7 @@
 package com.hmdp.service.impl;
 
 import ch.qos.logback.core.util.TimeUtil;
+import cn.hutool.core.util.BooleanUtil;
 import cn.hutool.core.util.StrUtil;
 import cn.hutool.json.JSONUtil;
 import com.baomidou.mybatisplus.core.mapper.BaseMapper;
@@ -37,21 +38,64 @@ public class ShopServiceImpl extends ServiceImpl<ShopMapper, Shop> implements IS
 
     @Override
     public Result queryById(Long id) {
+        //缓存
+        Shop shop;
+        //shop = queryWithchuangtou(id);
+        //缓存击穿
+        shop = queryWithMeyux(id);
+        return Result.ok(shop);
+    }
+    public Shop queryWithMeyux(Long id){
+        Shop shop;
+        String key = CACHE_SHOP_KEY+id;
+        String lock = LOCK_SHOP_KEY+id;
+        String s = stringRedisTemplate.opsForValue().get(key);
+        if (StrUtil.isNotBlank(s)) {
+            return JSONUtil.toBean(s,Shop.class);
+        }
+        try {
+            boolean isLock = tryLock(lock);
+            if (!isLock) {
+                Thread.sleep(50);
+                queryWithMeyux(id);
+            }
+            shop = getById(id);
+            if(shop==null){
+                return null;
+            }
+            stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
+        }catch (Exception e){
+            throw new RuntimeException(e.getMessage());
+        }finally {
+            unlock(lock);
+        }
+        return shop;
+    }
+
+    public Shop queryWithchuangtou(Long id){
         String key = CACHE_SHOP_KEY+id;
         String s = stringRedisTemplate.opsForValue().get(key);
         if (StrUtil.isNotBlank(s)) {
-            return Result.ok(JSONUtil.toBean(s,Shop.class));
+            return JSONUtil.toBean(s,Shop.class);
         }
         if(s!=null){
-            return Result.fail("店铺不存在");
+            return null;
         }
         Shop shop = getById(id);
         if(shop==null){
             stringRedisTemplate.opsForValue().set(key,"",CACHE_NULL_TTL, TimeUnit.MINUTES);
-            return Result.fail("店铺不存在!");
+            return null;
         }
         stringRedisTemplate.opsForValue().set(key,JSONUtil.toJsonStr(shop),CACHE_SHOP_TTL, TimeUnit.MINUTES);
-        return Result.ok(shop);
+        return shop;
+    }
+
+    public boolean tryLock(String key){
+        Boolean flag = stringRedisTemplate.opsForValue().setIfAbsent(key, "1", 10, TimeUnit.SECONDS);
+        return BooleanUtil.isTrue(flag);
+    }
+    public void unlock(String key){
+        stringRedisTemplate.delete(key);
     }
 
     @Override
