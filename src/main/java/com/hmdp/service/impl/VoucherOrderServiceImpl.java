@@ -64,7 +64,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         }finally {
             simpleRedisLock.unLock();
         }
-        return Result.fail("shibaile");
+        return Result.fail("失败");
     }
 
     @Transactional
