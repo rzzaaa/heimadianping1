@@ -40,7 +40,9 @@ public class BlogController {
         // 保存探店博文
         blogService.save(blog);
         // 返回id
+        System.out.println(blog.getId());
         return Result.ok(blog.getId());
+
     }
 
     @PutMapping("/like/{id}")
@@ -71,10 +73,7 @@ public class BlogController {
         List<Blog> records = page.getRecords();
         // 查询用户
         records.forEach(blog ->{
-            Long userId = blog.getUserId();
-            User user = userService.getById(userId);
-            blog.setName(user.getNickName());
-            blog.setIcon(user.getIcon());
+            blog = (Blog) blogService.queryById((long) blog.getId());
         });
         return Result.ok(records);
     }
@@ -83,5 +82,4 @@ public class BlogController {
     public Result queryById(@PathVariable("id") long id) {
         return Result.ok(blogService.queryById(id));
     }
-
 }

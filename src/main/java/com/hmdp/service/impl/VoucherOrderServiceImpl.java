@@ -39,6 +39,7 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
 
     @Override
     public Result seckillVoucher(Long voucherId) {
+        //获取订单信息
         SeckillVoucher seckillVoucher = seckillVoucherService.getById(voucherId);
         LocalDateTime now = LocalDateTime.now();
         if (seckillVoucher.getBeginTime().isAfter(now)) {
@@ -50,7 +51,9 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if (seckillVoucher.getStock()<1) {
             return Result.fail("库存不足!");
         }
+        //下单
         Long id = UserHolder.getUser().getId();
+
         SimpleRedisLock simpleRedisLock = new SimpleRedisLock("order"+id,stringRedisTemplate);
         boolean isLock = simpleRedisLock.tryLock(1200L);
         if(!isLock){
@@ -75,7 +78,6 @@ public class VoucherOrderServiceImpl extends ServiceImpl<VoucherOrderMapper, Vou
         if(count>0){
             return Result.fail("该用户已经购买，无法重复下单");
         }
-
         boolean flag = seckillVoucherService.update().setSql("stock = stock - 1")
                 .eq("voucher_id", voucherId)
                 .gt("stock",0)

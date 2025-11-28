@@ -28,10 +28,8 @@ import static com.hmdp.utils.RedisConstants.BLOG_LIKED_KEY;
 @Service
 public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IBlogService {
 
-
     @Resource
     private StringRedisTemplate stringRedisTemplate;
-
 
     @Resource
     private IUserService userService;
@@ -55,11 +53,8 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
                 stringRedisTemplate.opsForSet().remove(key,userId.toString());
             }
         }
-
         return Result.ok();
     }
-
-
 
     @Override
     public Blog queryById(long id) {
@@ -68,6 +63,11 @@ public class BlogServiceImpl extends ServiceImpl<BlogMapper, Blog> implements IB
         User user = userService.getById(userId);
         blog.setName(user.getNickName());
         blog.setIcon(user.getIcon());
-        return null;
+        //判断是否点赞
+        Boolean isMeaber = stringRedisTemplate.opsForSet().isMember(BLOG_LIKED_KEY + id,userId.toString());
+        if(BooleanUtil.isTrue(isMeaber)){
+            blog.setIsLike(true);
+        }
+        return blog;
     }
 }

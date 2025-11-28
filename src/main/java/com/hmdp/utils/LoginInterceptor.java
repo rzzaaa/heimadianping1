@@ -14,6 +14,7 @@ import javax.servlet.http.HttpSession;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 
+//登录拦截器，继承HandlerIntercepotor类，重写preHandle方法（拦截前）
 public class LoginInterceptor implements HandlerInterceptor {
 
     private StringRedisTemplate stringRedisTemplate;

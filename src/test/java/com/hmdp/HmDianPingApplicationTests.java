@@ -27,6 +27,9 @@ class HmDianPingApplicationTests {
 
     @Resource
     private RedisIdWorker redisIdWorker;
+
+    @Resource
+    private StringRedisTemplate stringRedisTemplate;
     @Test
     public void test(){
         Shop shop = shopService.getById(1L);
@@ -49,4 +52,10 @@ class HmDianPingApplicationTests {
         latch.await();
         System.out.println("你好世界");
     }
+
+    @Test
+    public void test1(){
+        stringRedisTemplate.opsForSet().add("blog:liked","0101");
+    }
+
 }
